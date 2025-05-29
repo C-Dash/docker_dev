@@ -1,0 +1,71 @@
+version: "3.2"
+
+services:
+
+  mariadb:
+    image: mariadb:10.3.21
+    restart: always
+    networks:
+      - network1
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: blabla 
+      MYSQL_DATABASE: omeka
+      MYSQL_USER: omeka
+      MYSQL_PASSWORD: omeka
+      explicit_defaults_for_timestamp: 1
+
+  adminer:        # Database management tool for MariaDB
+    image: adminer
+    restart: always
+    networks:
+      - network1 
+    ports:
+      - 8080:8080
+    environment:
+      ADMINER_DEFAULT_DB_DRIVER: mysql
+      ADMINER_DEFAULT_DB_HOST: mariadb
+
+  omeka:          # This is the main web server for Omeka.  
+    depends_on:
+      - mariadb
+    image: cdash-omeka-dev-4.0.1.10
+    restart: always
+    networks:
+      - network1 
+    ports:
+      - "80:80"
+    links:
+      - mariadb:db
+    volumes:
+      ## ALT 1 Bind Mount
+      ## The following path shuld point to your 'cdash_persist' folder as a bind mount.  
+      ## This way of doing things is much slower but simpler to back up and to sync with 
+      ## the github repo than the named volume method.
+      #- type: bind
+      #  source: f:\current_work\projects\cdash\cdash-dev\cdash-persist
+      #  target: /var/www/html/cdash-persist
+
+      ## ALT 1 Bind Mount
+      ## Uncomment the following line and copy your cdash-persist to 
+      ## \\wsl$\docker-desktop-data\version-pack-data\community\docker\volumes\cdash_persist_vol\_data
+      ## to mount the persisting data to the omeka-s container as a "named volume".  Much faster but
+      ## more complicated to back up and to sync with the git repo.
+
+      - cdash-persist:/var/www/html/cdash-persist
+
+      ## If you want to use your Omeka machine to do the php tutorials. 
+      ## The following path shuld point to your 'php-tut' folder.
+      #- type: bind
+        #source: f:\current_work\projects\cdash\php-tut
+        #target: /var/www/html/php-tut
+
+volumes:
+  mysql-data:
+  cdash-persist:
+     external: true
+
+networks:
+  network1:  
