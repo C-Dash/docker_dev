@@ -1,6 +1,5 @@
 # Container for Omeka-S development intended to run on docker desktop.
 # Paul Cote for Cambridge Historical Commission
-version: "4.0.4"
 
 services:
 
@@ -33,7 +32,7 @@ services:
   omeka:          # This is the main web server for Omeka.  
     depends_on:
       - db
-    image: cdash-omeka-dev-4.0.4
+    image: cdash-omeka-dev-4.1.1r2
     restart: always
     networks:
       - network1 
@@ -42,13 +41,18 @@ services:
     links:
       - db:db
     volumes:
-
     ## Bind Mounts are defined  in docker desktop and may 
     ## subsequntly be managed through the ordinary windows filesystem 
     ## through \\wsl$\docker-desktop-data\version-pack-data\community\docker\volumes
 
       - cdash-persist:/var/www/html/persist
       - cdash-scans:/var/www/html/scans
+
+    ## CDASH 5 theme, developed on the host and served live. Mounted over a
+    ## subpath of the cdash-persist volume above -- Docker applies mounts in
+    ## order of destination depth, so this lands on top. Read-only because
+    ## Omeka keeps theme settings in the database, not in the theme directory.
+      - ../cdash_5.0.0:/var/www/html/persist/themes/cdash_5.0.0:ro
 
 volumes:
   mysql-data:

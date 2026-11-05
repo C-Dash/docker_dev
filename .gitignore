@@ -1,0 +1,6 @@
+# Omeka S release zips are not tracked; download the one the Dockerfile COPYs
+# from https://github.com/omeka/omeka-s/releases
+omeka-s-*.zip
+
+# Database dumps used to seed a new instance (collection data)
+db-init/*.sql

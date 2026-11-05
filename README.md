@@ -1,5 +1,11 @@
 # CDASH Development Environment Docker set up.
 
+## Omeka S release zip (not tracked in git)
+The Dockerfile COPYs an Omeka S release zip (e.g. `omeka-s-4.1.1.zip`) from this
+folder. These zips are not committed. Download the version named in the
+Dockerfile from https://github.com/omeka/omeka-s/releases and place it here
+before building.
+
 Build container for Omeka with C-Dash customizations
 WIth command prompt current working directory in cdash-dev-docker run:
 :> docker image build -t cdash-omeka-dev-2.0.2 .

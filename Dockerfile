@@ -28,12 +28,14 @@ RUN docker-php-ext-configure zip
 RUN docker-php-ext-install -j$(nproc) iconv pdo pdo_mysql mysqli gd xml zip 
 RUN pecl install imagick 
 RUN docker-php-ext-enable imagick 
-COPY ./imagemagick-policy.xml /etc/ImageMagick/policy.xml
+# ImageMagick policy is kept in persist/config so we can edit it. 
+# RUN rm /etc/ImageMagick-6/policy.xml && ln -s /var/www/html/persist/config/ImageMagick-6/policy.xml /etc/ImageMagick-6/policy.xml
 
 # Add the Omeka-S PHP code
 RUN mkdir -p /var/www/html/omeka-s/
-COPY ./omeka-s-4.0.4.zip /var/www/html
-RUN unzip -q /var/www/html/omeka-s-4.0.4.zip -d /var/www/html
+COPY ./omeka-s-4.1.1.zip /var/www/html
+RUN unzip -q /var/www/html/omeka-s-4.1.1.zip -d /var/www/html \
+&& rm /var/www/html/omeka-s-4.1.1.zip
 RUN cd /var/www/html/omeka-s && chgrp www-data files && chmod g+w files
 
 # Below we create symlinks for all of the installation-specific Omeka-S resources
@@ -51,9 +53,20 @@ RUN cd /var/www/html/omeka-s && chgrp www-data files && chmod g+w files
     && rm -r /var/www/html/omeka-s/modules \
     && ln -sfv /var/www/html/persist/modules /var/www/html/omeka-s/modules 
 
+# We have had problems with bots requiring us to fiddle with robots.txt and .htaccess.
+# These files have been moved to persist/config so that thhey aren't wiped out with each reboot. 
+# 
+   RUN rm /var/www/html/omeka-s/.htaccess \
+       && ln -s /var/www/html/persist/config/apache2/.htaccess_dev /var/www/html/omeka-s/.htaccess \
+       && ln -s /var/www/html/persist/config/apache2/robots.txt /var/www/html/omeka-s/robots.txt 
+
+# Uncomment these for production
+#   RUN rm /var/log/apache2/access.log \
+#    && ln -s /var/www/html/persist/config/apache2/access.log /var/log/apache2/access.log
+
 COPY ./000-default.conf /etc/apache2/sites-enabled/000-default.conf
 COPY ./cdash_ico.ico /var/www/html/omeka-s/favicon.ico 
-COPY ./.htaccess_dev /var/www/html/omeka-s/.htaccess
+# COPY ./.htaccess_dev /var/www/html/omeka-s/.htaccess
 COPY ./index.htm /var/www/html/index.htm
 
 CMD ["apache2-foreground"]
