@@ -2,10 +2,10 @@
 # Runs in context created by docker-compose.yml
 # Paul Cote for Cambridge Historical Commission
 
-FROM php:8.2-apache
+FROM php:8.4-apache
 
 RUN a2enmod rewrite
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qq update && apt-get -qq install -y --no-install-recommends apt-utils \
     unzip \
     libfreetype6-dev \
@@ -28,14 +28,15 @@ RUN docker-php-ext-configure zip
 RUN docker-php-ext-install -j$(nproc) iconv pdo pdo_mysql mysqli gd xml zip 
 RUN pecl install imagick 
 RUN docker-php-ext-enable imagick 
-# ImageMagick policy is kept in persist/config so we can edit it. 
-# RUN rm /etc/ImageMagick-6/policy.xml && ln -s /var/www/html/persist/config/ImageMagick-6/policy.xml /etc/ImageMagick-6/policy.xml
+# ImageMagick policy is kept in persist/config/ImageMagick-6 so we can edit it. Debian trixie ships ImageMagick 7, which reads the same format.
+RUN rm /etc/ImageMagick-7/policy.xml \
+ && ln -s /var/www/html/persist/config/ImageMagick-6/policy.xml /etc/ImageMagick-7/policy.xml
 
 # Add the Omeka-S PHP code
 RUN mkdir -p /var/www/html/omeka-s/
-COPY ./omeka-s-4.1.1.zip /var/www/html
-RUN unzip -q /var/www/html/omeka-s-4.1.1.zip -d /var/www/html \
-&& rm /var/www/html/omeka-s-4.1.1.zip
+COPY ./omeka-s-4.2.1.zip /var/www/html
+RUN unzip -q /var/www/html/omeka-s-4.2.1.zip -d /var/www/html \
+&& rm /var/www/html/omeka-s-4.2.1.zip
 RUN cd /var/www/html/omeka-s && chgrp www-data files && chmod g+w files
 
 # Below we create symlinks for all of the installation-specific Omeka-S resources

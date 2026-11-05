@@ -1,51 +1,69 @@
 # Container for Omeka-S development intended to run on docker desktop.
 # Paul Cote for Cambridge Historical Commission
+#
+# Omeka S 4.2.1 experimental instance.
+# Has its OWN persist volume (cdash-persist-421, created as a copy of the 4.1.1
+# cdash-persist volume) and its OWN database, so module upgrades and the 4.2
+# schema migration cannot touch the 4.1.1 dev instance (../cdash-dev-docker).
+# Only the cdash-scans volume is shared.  Uses different host ports so both
+# stacks can run at the same time:
+#     Omeka   -> http://localhost:8081/
+#     Adminer -> http://localhost:8082/
+#
+# Build and start:   docker compose up -d --build
+
+name: cdash-dev-421
 
 services:
 
   db:
-    image: mysql
+    image: mysql:9.4        # same version as the 4.1.1 instance's db
     restart: always
     networks:
       - network1
     volumes:
       - mysql-data:/var/lib/mysql
+    ## On FIRST start only (when mysql-data is empty), MySQL loads any *.sql in
+    ## ./db-init into the omeka database.  Put a dump of the 4.1.1 db there
+    ## (see README) so this instance starts as a copy of 4.1.1.  Ignored once
+    ## the volume is initialised.
+      - ./db-init:/docker-entrypoint-initdb.d:ro
 
     environment:
-      MYSQL_ROOT_PASSWORD: blabla 
+      MYSQL_ROOT_PASSWORD: blabla
       MYSQL_DATABASE: omeka
       MYSQL_USER: omeka
       MYSQL_PASSWORD: omeka
       explicit_defaults_for_timestamp: 1
 
-  adminer:        # Database management tool for MariaDB
+  adminer:        # Database management tool for MySQL
     image: adminer
     restart: always
     networks:
-      - network1 
+      - network1
     ports:
-      - 8080:8080
+      - 8082:8080
     environment:
       ADMINER_DEFAULT_DB_DRIVER: mysql
       ADMINER_DEFAULT_DB_HOST: db
 
-  omeka:          # This is the main web server for Omeka.  
+  omeka:          # This is the main web server for Omeka.
     depends_on:
       - db
-    image: cdash-omeka-dev-4.1.1r2
+    build: .
+    image: cdash-omeka-dev-4.2.1
     restart: always
     networks:
-      - network1 
+      - network1
     ports:
-      - "80:80"
-    links:
-      - db:db
+      - "8081:80"
     volumes:
-    ## Bind Mounts are defined  in docker desktop and may 
-    ## subsequntly be managed through the ordinary windows filesystem 
+    ## Named volumes created in docker desktop.  cdash-persist-421 is private to
+    ## this instance; cdash-scans is shared with the 4.1.1 instance.
+    ## They may be managed through the ordinary windows filesystem
     ## through \\wsl$\docker-desktop-data\version-pack-data\community\docker\volumes
 
-      - cdash-persist:/var/www/html/persist
+      - cdash-persist-421:/var/www/html/persist
       - cdash-scans:/var/www/html/scans
 
     ## CDASH 5 theme, developed on the host and served live. Mounted over a
@@ -55,10 +73,10 @@ services:
       - ../cdash_5.0.0:/var/www/html/persist/themes/cdash_5.0.0:ro
 
 volumes:
-  mysql-data:
-  cdash-persist:
+  mysql-data:            # created as cdash-dev-421_mysql-data
+  cdash-persist-421:     # copy of cdash-persist made for this instance
      external: true
   cdash-scans:
      external: true
 networks:
-  network1:  
+  network1:
